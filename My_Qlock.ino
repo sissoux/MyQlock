@@ -25,7 +25,7 @@ void setup()  {
   setSyncProvider(getTeensy3Time);    // Set the clock reference to use the 32.768kHz crystal of the Teensy
 
   Serial.begin(115200);               // For debug purpose, or for future APP dev
-  //while (!Serial);                    // Wait for Arduino Serial Monitor to open For debug purpose
+  while (!Serial);                    // Wait for Arduino Serial Monitor to open For debug purpose
 
   delay(100);                         // Useless Delay, but on sait jamais ^^
 
@@ -48,8 +48,8 @@ void loop() {
     RefreshTimer = RefreshTimer - REFRESH_RATE;
     refreshOutput();
     RefreshFlag = 1;
-    m++;
-    if (m == 60) m = 0;
+    //m++;
+    //if (m == 60) m = 0;
     writeTime();
     
   }
@@ -59,8 +59,8 @@ void loop() {
   {
     ColorTimer = ColorTimer - 1000;
     //ActiveBuffer = !ActiveBuffer;
-    h++;
-    if (h == 13) h = 0;
+    //h++;
+    //if (h == 14) h = 1;
     
   }
 
@@ -79,7 +79,7 @@ void refreshOutput()
     {
       /*TempColor = strip.Color(10,0,0);
       strip.setPixelColor(i, TempColor);*/
-      strip.setPixelColor(i, OutBuffer_0[i]);
+      strip.setPixelColor(i, OutBuffer_0[Mapping[i]]);
     }
   }
   else
@@ -88,7 +88,7 @@ void refreshOutput()
     {
       /*TempColor = strip.Color(0,10,0);
       strip.setPixelColor(i, TempColor);*/
-      strip.setPixelColor(i, OutBuffer_1[i]); 
+      strip.setPixelColor(i, OutBuffer_1[Mapping[i]]); 
     }
   }
   
@@ -103,8 +103,11 @@ time_t getTeensy3Time()      // Function used by RTC
 
 void writeTime()
 {
-  //h = 10;//hour();
-  //m = 3;//minute();
+  h = hour()%12;
+  //Serial.print(h);
+  m = minute();
+  //Serial.print("  ");
+  //Serial.println(m);
   int FithOfMin = m / 5;
   clear_Buffer(ActiveBuffer);
   for (int pixel = 0 ; pixel < 66 ; pixel++)
