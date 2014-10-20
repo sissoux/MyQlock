@@ -1,11 +1,16 @@
 #include <Adafruit_NeoPixel.h>
 #include <Time.h>  
 #include "define.h"
+#include <CapacitiveSensor.h>
 
-#define COLORRATE 100
 
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(110, 6, NEO_GRB + NEO_KHZ800);    // Declare the LED strip using Adafruit library
+
+
+CapacitiveSensor   RcapSens = CapacitiveSensor(22,19);        // Right capacitive sensor
+CapacitiveSensor   LcapSens = CapacitiveSensor(22,18);        // Left capacitive sensor
+
 
 boolean Error = false;            // Error state
 boolean RefreshFlag = false;      // Used to tell if strip has been refreshed
@@ -21,10 +26,14 @@ uint16_t h = 0;                      // Temp var used to store current Hour
 uint16_t m = 0;                      // Temp var used to store current Minute
 uint32_t ColorMask;
 
+rgb MyRGBColor;
+hsv MyHSVColor;
+
+
 enum colormode{
 FADING,
 STATIC
-}
+};
 
 colormode ColorMode = FADING;
 
@@ -46,7 +55,9 @@ void setup()  {
   ColorMask = strip.Color(100,25,0);
   strip.begin();                    // Start the strip
   strip.show();                     // Initialize all pixels to 'off'
-
+  MyHSVColor.h = 0.0;
+  MyHSVColor.s = 1.0;
+  MyHSVColor.v = 1.0;
 }
 
 void loop() {
@@ -64,20 +75,44 @@ void loop() {
   }
   
   //// Display refresh check section ////
-  if (ColorTimer >= COLORRATE) 
+  if (ColorTimer >= COLOR_CHANGE_RATE) 
   {
-    ColorTimer = ColorTimer - COLORRATE;
+    ColorTimer = ColorTimer - COLOR_CHANGE_RATE;
     //ActiveBuffer = !ActiveBuffer;
     //h++;
     //if (h == 14) h = 1;
-    if (ColorMode == FADING)
+    if (false)//ColorMode == FADING)
     {
-      ColorMask++;
+      ColorMask+=10;
+      MyHSVColor.h += 1;//0.1;
+      if (MyHSVColor.h==360) MyHSVColor.h = 0;
+      Serial.println(MyHSVColor.h);
+      MyRGBColor = hsv2rgb(MyHSVColor);
+      ColorMask = strip.Color((int)(MyRGBColor.r*255), (int)(MyRGBColor.g*255), (int)(MyRGBColor.b*255));
     }
-    
+    //Serial.println((double)(constrain(map(analogRead(A9),300,900,100,10),10,100))/100.0);
+    MyHSVColor.v = (double)(constrain(map(analogRead(A9),300,900,100,10),10,100))/100.0;
+    MyRGBColor = hsv2rgb(MyHSVColor);
+    ColorMask = strip.Color((int)(MyRGBColor.r*255), (int)(MyRGBColor.g*255), (int)(MyRGBColor.b*255));
   }
 
 
+  if(RcapSensor > R_SENSOR_THRESHOLD)
+  {
+    while (RcapSensor > R_SENSOR_THRESHOLD);
+    Now = millis();
+    while (millis() - Now < DEBOUNCE_DELAY);
+    Serial.println("Got Touch on RIGHT Sensor");
+  }
+  
+  if(LcapSensor > L_SENSOR_THRESHOLD)
+  {
+    while (LcapSensor > L_SENSOR_THRESHOLD);
+    Now = millis();
+    while (millis() - Now < DEBOUNCE_DELAY);
+    Serial.println("Got Touch on LEFT Sensor");
+  }
+  Serial.println("No Touch :(");
   //// Display refresh check section ////
 }
 
@@ -116,9 +151,9 @@ time_t getTeensy3Time()      // Function used by RTC
 
 void writeTime()
 {
-  h = hour()%12;
+  h = 9;//hour()%12;
   //Serial.print(h);
-  m = minute();
+  m = 30; //minute();
   //Serial.print("  ");
   //Serial.println(m);
   int FithOfMin = m / 5;
