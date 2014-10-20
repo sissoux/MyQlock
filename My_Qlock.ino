@@ -2,6 +2,8 @@
 #include <Time.h>  
 #include "define.h"
 
+#define COLORRATE 100
+
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(110, 6, NEO_GRB + NEO_KHZ800);    // Declare the LED strip using Adafruit library
 
@@ -18,6 +20,13 @@ elapsedMillis ColorTimer;
 uint16_t h = 0;                      // Temp var used to store current Hour
 uint16_t m = 0;                      // Temp var used to store current Minute
 uint32_t ColorMask;
+
+enum colormode{
+FADING,
+STATIC
+}
+
+colormode ColorMode = FADING;
 
 
 void setup()  {
@@ -55,12 +64,16 @@ void loop() {
   }
   
   //// Display refresh check section ////
-  if (ColorTimer >= 1000) 
+  if (ColorTimer >= COLORRATE) 
   {
-    ColorTimer = ColorTimer - 1000;
+    ColorTimer = ColorTimer - COLORRATE;
     //ActiveBuffer = !ActiveBuffer;
     //h++;
     //if (h == 14) h = 1;
+    if (ColorMode == FADING)
+    {
+      ColorMask++;
+    }
     
   }
 
