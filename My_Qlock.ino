@@ -288,20 +288,37 @@ time_t getTeensy3Time()      // Function used by RTC
 
 void writeTime()
 {
+  m = minute();
   h = hour()%12;
-
+  if ( m >=35)
+  {
+    h++;
+  }
   if (h == 0)
   {
     if (isPM())
     {
-      h = 12;
+      if (m>=35)
+      {
+        h = 13;
+      }
+      else
+      {
+        h = 12;
+      }
     }
     else
     {
-      h = 13;
+      if (m>=35)
+      {
+        h = 12;
+      }
+      else
+      {
+        h = 13;
+      }
     }
   }
-  m = minute();
 
   int FithOfMin = m / 5;
   clear_Buffer(ActiveBuffer);
