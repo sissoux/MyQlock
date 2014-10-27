@@ -289,11 +289,12 @@ time_t getTeensy3Time()      // Function used by RTC
 void writeTime()
 {
   m = minute();
-  h = hour()%12;
+  h = hour();
   if ( m >=35)
   {
     h++;
   }
+  h = h % 12;
   if (h == 0)
   {
     if (isPM())
