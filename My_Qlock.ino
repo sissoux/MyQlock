@@ -304,28 +304,14 @@ void writeTime()
   {
     if ((HourMask[pixel]>>h-1)&1)
     {
-      if (CurrentState == HSET)
-      {
-        fill_Buffer(ActiveBuffer, pixel, ColorMask*Blink);
-      }
-      else
-      {
         fill_Buffer(ActiveBuffer, pixel, ColorMask); 
-      }
     }   
   }
   for (int pixel = 66 ; pixel < 110 ; pixel++)          // Fill in MINUTE pixels
   {
     if ((MinuteMask[pixel-66]>>FithOfMin-1)&1)
     {
-      if (CurrentState == MSET)
-      {
-        fill_Buffer(ActiveBuffer, pixel, ColorMask*Blink);
-      }
-      else
-      {
         fill_Buffer(ActiveBuffer, pixel, ColorMask); 
-      } 
     }  
   }
 }
@@ -333,6 +319,10 @@ void writeTime()
 void fill_Buffer(int BufferID, int PixelID, uint32_t Color)
 {
 	uint32_t OutBuffer = BufferID ? OutBuffer_1 : OutBuffer_0;
+	if (CurrentState == HSET || CurrentState == MSET)
+	{
+		Color = Color*Blink;
+	}
 	OutBuffer[PixelID] = Color;
 }
 
