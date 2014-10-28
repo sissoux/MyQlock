@@ -4,9 +4,13 @@
 #include <CapacitiveSensor.h>
 
 //TODO Faire une distinction clic long, clic rapide.
+//TODO Effet Matrix
+//TODO Indiquer un temps par minute
+//TODO Réglage luminosité maximale
+//TODO Messages / Génération de message
+//TODO Optimiser
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(110, 6, NEO_GRB + NEO_KHZ800);    // Declare the LED strip using Adafruit library
-
 
 CapacitiveSensor   RcapSensor = CapacitiveSensor(22,18);        // Right capacitive sensor
 CapacitiveSensor   LcapSensor = CapacitiveSensor(22,19);        // Left capacitive sensor
@@ -16,7 +20,7 @@ int screenRefreshRate = 20;
 byte FlagRegister = 0;
 byte Blink = 0;
 
-boolean Error = false;            // Error state
+boolean RTCError = false;            // Error state
 //boolean RefreshFlag = false;      // Used to tell if strip has been refreshed
 
 uint32_t OutBuffer_0[LED_COUNT];    // First buffer of 2 for circular buffering. Contains Pixel color
@@ -38,6 +42,9 @@ int SatSign = -1;
 
 boolean hasToBeReDrawnNow = false;
 
+state CurrentState = NORMAL;
+colormode ColorMode = FADING;
+
 enum colormode{
   FADING,
   STATIC
@@ -52,11 +59,6 @@ enum state{
   STBY
 };
 
-state CurrentState = NORMAL;
-
-colormode ColorMode = FADING;
-
-
 void setup()  {
   // set the Time library to use Teensy 3.0's RTC to keep time
   setSyncProvider(getTeensy3Time);    // Set the clock reference to use the 32.768kHz crystal of the Teensy
@@ -64,11 +66,10 @@ void setup()  {
   Serial.begin(115200);               // For debug purpose, or for future APP dev
   //while (!Serial);                    // Wait for Arduino Serial Monitor to open For debug purpose
 
-
   if (timeStatus()!= timeSet)         // Check for RTC sync error
   {
     Serial.println("Unable to sync with the RTC");
-    Error = true;
+    RTCError = true;
   }
   ColorMask = strip.Color(0,0,0);
   strip.begin();                    // Start the strip
@@ -227,41 +228,40 @@ void navig()
 
 void colorMaskUpdate()
 {
-  if (ColorMode == FADING)
-  {
-    MyHSVColor.h += 0.02;
-    if (MyHSVColor.h>360) MyHSVColor.h = 0;
+	if (ColorMode == FADING)
+	{
+		MyHSVColor.h += 0.02;
+		if (MyHSVColor.h>360) MyHSVColor.h = 0;
 
-    MyHSVColor.v = (double)(constrain(map(analogRead(A9),300,900,100,5),5,100))/100.0;
+		MyHSVColor.v = (double)(constrain(map(analogRead(A9),300,900,100,5),5,100))/100.0;
 
-    MyHSVColor.s += 0.000003*SatSign;
-    if (MyHSVColor.s > 1) SatSign = -1;
-    if (MyHSVColor.s < 0) SatSign = 1;
+		MyHSVColor.s += 0.000003*SatSign;
+		if (MyHSVColor.s > 1) SatSign = -1;
+		if (MyHSVColor.s < 0) SatSign = 1;
 
-
-    MyRGBColor = hsv2rgb(MyHSVColor);
-    ColorMask = strip.Color((int)(MyRGBColor.r*255), (int)(MyRGBColor.g*255), (int)(MyRGBColor.b*255));
-  }
+		MyRGBColor = hsv2rgb(MyHSVColor);
+		ColorMask = strip.Color((int)(MyRGBColor.r*255), (int)(MyRGBColor.g*255), (int)(MyRGBColor.b*255));
+	}
 }
 
 //// Capacitive sensor thread ////
 void sensorCheck()
 {
-  long LcapSensorVal =  LcapSensor.capacitiveSensor(30);      //Launch capacitive sensor acquisition, return corresponding delay
-  delay2(50);
-  long RcapSensorVal =  RcapSensor.capacitiveSensor(30);
+	long LcapSensorVal =  LcapSensor.capacitiveSensor(30);      //Launch capacitive sensor acquisition, return corresponding delay
+	delay2(50);
+	long RcapSensorVal =  RcapSensor.capacitiveSensor(30);
 
-  if(RcapSensorVal > R_SENSOR_THRESHOLD)      // If returned value is greater than Threshold, debounce and raise corresponding FLAG
-  {
-	delay2(200);
-    FlagRegister |= R_FLAG_MASK;
-  }
+	if(RcapSensorVal > R_SENSOR_THRESHOLD)      // If returned value is greater than Threshold, debounce and raise corresponding FLAG
+	{
+		delay2(200);
+		FlagRegister |= R_FLAG_MASK;
+	}
 
-  if(LcapSensorVal > L_SENSOR_THRESHOLD)
-  {
-	delay2(200);
-    FlagRegister |= L_FLAG_MASK;
-  }
+	if(LcapSensorVal > L_SENSOR_THRESHOLD)
+	{
+		delay2(200);
+		FlagRegister |= L_FLAG_MASK;
+	}
 }
 
 void refreshOutput()
@@ -280,7 +280,7 @@ void refreshOutput()
 
 time_t getTeensy3Time()      // Function used by RTC
 {
-  return Teensy3Clock.get();
+	return Teensy3Clock.get();
 }
 
 void writeTime()
@@ -300,20 +300,20 @@ void writeTime()
 	int FithOfMin = m / 5;
 	clear_Buffer(ActiveBuffer);
 
-  for (int pixel = 0 ; pixel < 66 ; pixel++)            // Fill in HOUR pixels
-  {
-    if ((HourMask[pixel]>>h-1)&1)
-    {
-        fill_Buffer(ActiveBuffer, pixel, ColorMask); 
-    }   
-  }
-  for (int pixel = 66 ; pixel < 110 ; pixel++)          // Fill in MINUTE pixels
-  {
-    if ((MinuteMask[pixel-66]>>FithOfMin-1)&1)
-    {
-        fill_Buffer(ActiveBuffer, pixel, ColorMask); 
-    }  
-  }
+	for (int pixel = 0 ; pixel < 66 ; pixel++)            // Fill in HOUR pixels
+	{
+		if ((HourMask[pixel]>>h-1)&1)
+		{
+			fill_Buffer(ActiveBuffer, pixel, ColorMask); 
+		}   
+	}
+	for (int pixel = 66 ; pixel < 110 ; pixel++)          // Fill in MINUTE pixels
+	{
+		if ((MinuteMask[pixel-66]>>FithOfMin-1)&1)
+		{
+			fill_Buffer(ActiveBuffer, pixel, ColorMask); 
+		}  
+	}
 }
 
 void fill_Buffer(int BufferID, int PixelID, uint32_t Color)
@@ -352,38 +352,38 @@ void clearStrip()
 // Input a value 0 to 255 to get a color value.
 // The colours are a transition r - g - b - back to r.
 uint32_t Wheel(byte WheelPos) {
-  if(WheelPos < 85) {
-    return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
-  } 
-  else if(WheelPos < 170) {
-    WheelPos -= 85;
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
-  } 
-  else {
-    WheelPos -= 170;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
-  }
+	if(WheelPos < 85) {
+		return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+	} 
+	else if(WheelPos < 170) {
+		WheelPos -= 85;
+		return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+	} 
+	else {
+		WheelPos -= 170;
+		return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+	}
 }
 
 // Fill the dots one after the other with a color
 void colorWipe(uint32_t c, uint8_t wait) {
-  for(uint16_t i=0; i<strip.numPixels(); i++) {
-    strip.setPixelColor(i, c);
-    strip.show();
-    delay2(wait);
-  }
+	for(uint16_t i=0; i<strip.numPixels(); i++) {
+		strip.setPixelColor(i, c);
+		strip.show();
+		delay2(wait);
+	}
 }
 
 void rainbow(uint8_t wait) {
-  uint16_t i, j;
+	uint16_t i, j;
 
-  for(j=0; j<256; j++) {
-    for(i=0; i<strip.numPixels(); i++) {
-      strip.setPixelColor(i, Wheel((i+j) & 255));
-    }
-    strip.show();
-    delay2(wait);
-  }
+	for(j=0; j<256; j++) {
+		for(i=0; i<strip.numPixels(); i++) {
+			strip.setPixelColor(i, Wheel((i+j) & 255));
+		}
+		strip.show();
+		delay2(wait);
+	}
 }
 
 void writeFrame(int FrameID)
@@ -483,6 +483,10 @@ void writeFrame(int FrameID)
 		strip.show();
 		delay2(20);
 	}
+	break;
+	
+	case RTC_FRAME:
+	//display "RTC" on strip to indicate 
 	break;
   }
   strip.show();
