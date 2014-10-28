@@ -341,6 +341,14 @@ void clear_Buffer(int BufferID)
 	}
 }
 
+void clearStrip()
+{
+	for(uint16_t i=0; i<strip.numPixels(); i++) 
+	{
+		strip.setPixelColor(i, 0);
+	}
+}
+
 // Input a value 0 to 255 to get a color value.
 // The colours are a transition r - g - b - back to r.
 uint32_t Wheel(byte WheelPos) {
@@ -381,21 +389,13 @@ void rainbow(uint8_t wait) {
 void writeFrame(int FrameID)
 {
   uint8_t x, y, r, g, b, pixel, brightness;
+  clearStrip();
   switch (FrameID)
   {
 	case 0:
-	for(uint16_t i=0; i<strip.numPixels(); i++) 
-	{
-		strip.setPixelColor(i, 0);
-	}
 	break;
 
 	case H_FRAME:
-	for(uint16_t i=0; i<strip.numPixels(); i++) 
-	{
-		strip.setPixelColor(i, 0);
-	}
-
 	for (int i = 0; i<(sizeof(FrameH)/5);i++)
 	{
 		x = FrameH[i][X];
@@ -416,11 +416,6 @@ void writeFrame(int FrameID)
 	break;
 
 	case M_FRAME:
-	for(uint16_t i=0; i<strip.numPixels(); i++) 
-	{
-		strip.setPixelColor(i, 0);
-	}
-
 	for (int i = 0; i<(sizeof(FrameM)/5);i++)
 	{
 		x = FrameM[i][X];
@@ -441,11 +436,6 @@ void writeFrame(int FrameID)
 	break;
 
 	case HI_FRAME:
-	for(uint16_t i=0; i<strip.numPixels(); i++) 
-	{
-		strip.setPixelColor(i, 0);
-	}
-
 	for (brightness = 0 ; brightness < 255 ; brightness++)
 	{ 
 		for (int i = 0; i<(sizeof(FrameHI)/5) ; i++)
@@ -471,11 +461,6 @@ void writeFrame(int FrameID)
 	break;
 
 	case BYE_FRAME:
-	for(uint16_t i=0; i<strip.numPixels(); i++) 
-	{
-		strip.setPixelColor(i, 0);
-	}
-
 	for (brightness = 255 ; brightness > 0 ; brightness--)
 	{ 
 		for (int i = 0; i<(sizeof(FrameBYE)/5);i++)
