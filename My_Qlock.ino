@@ -121,8 +121,28 @@ void loop() {
     Blinker = 0;
     Blink = !Blink;
   }
-
-
+  
+  if (Serial.available())
+  {
+    time_t t = processSyncMessage();
+    if (t != 0) 
+    {
+      Teensy3Clock.set(t); // set the RTC
+      setTime(t);
+    }
+  }
+}
+// Read input buffer chars until finding TIME_HEADER ==> DISCARD EVERY DATA BEFORE HEADER AND ALL DATA IF HEADER NOT FOUND
+// TO BE MODIFIED
+unsigned long processSyncMessage() 
+{
+  unsigned long pctime = 0L;
+  if(Serial.find(TIME_HEADER)) 
+  {
+     pctime = Serial.parseInt();
+     return pctime;
+  }
+  return pctime;
 }
 
 
